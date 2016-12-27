@@ -1,0 +1,100 @@
+String val_Unlock = "";//defining a variable for reciving the input from the user
+String val_Lock = "";
+String password = String("miku123456");
+int input1;
+//int input2;
+int count = 0;
+int accessAllowed = 0;
+void setup()
+{
+  // pinMode(2,INPUT);/* pin for infrared sensor*/
+   pinMode(3,INPUT); /* pin for infrared sensor*/
+   pinMode(9,OUTPUT);/*LED for wrong password*/
+   pinMode(10,OUTPUT); /*LED for correct password*/
+  
+   Serial.begin(9600);//the speed at which data rate transfer
+   // reserve 15 bytes for the val_Unlock and val_Lock:
+   val_Unlock.reserve(15);
+   val_Lock.reserve(15);
+}
+
+
+void loop()
+{
+     input1 = digitalRead(3);
+     //input2 = digitalRead(2);
+
+    /*if unauthorized access in room*/
+    if(input1 == HIGH /*&& input2 == HIGH*/)//door is closed  
+    {
+          Serial.println("Room is secured\n");
+    }
+    else if( input1 == LOW /*&& input2 == LOW*/ )//door is opened
+    {
+        if( accessAllowed != 1 )
+        {
+            //Emergency
+            Serial.println("Unauthorized Access \n( Theft Alert )");
+        }
+        else if( accessAllowed == 1)
+        {
+            Serial.println("Door opened after authorization");
+            //to relock door
+            while(accessAllowed)
+            {
+                 if (Serial.available() )
+                 {;}
+                 val_Lock = Serial.read();
+                 if ( val_Lock != password )//condition for moving forward
+                 {
+                       Serial.write("Wrong Password ");
+                 }
+                 else if(val_Lock == password)
+                 {
+                      Serial.write("Room has been locked");
+                      val_Unlock = "";
+                      val_Lock = "";
+                      accessAllowed = 0;
+                 }                           
+            }
+        }
+    }
+
+     if ( val_Unlock != password )//condition for moving forward
+     {
+           Serial.write("Wrong Password");
+           count++;
+           if(count >= 3)
+           {
+              for( int i=0 ; i<10 ;i++)
+              {
+                 input1 = digitalRead(3);
+                 //input2 = digitalRead(3);
+                 if(input1 == HIGH /*&& input2 == HIGH*/)
+                    delay(100);
+                 else if(input1 == LOW /*&& input2 == LOW*/)
+                  {
+                      if(accessAllowed != 1)
+                      {
+                          Serial.write("Unauthorized Access \n( Theft Alert )");
+                      }
+                   }
+              }
+           }
+     }
+     else if(val_Unlock == password)
+     {
+          Serial.write("Room Unlocked");
+          val_Unlock = "";
+          val_Lock = "";
+          accessAllowed = 1;
+          count=0;
+     }   
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    val_Unlock += inChar;
+  }
+}
